@@ -3,16 +3,18 @@ package cli;
 import core.CipherBox;
 import java.io.File;
 import java.util.Scanner;
+import utils.Utils;
 
 public class MainCLI {
     private static final String DATA_DIR = "src/data/";
     private static final String ORIGINALS_DIR = "src/central/";
 
     public static void main(String[] args) {
-        animateBrosgor();
-        CipherBox cipherBox = new CipherBox(DATA_DIR);
+
+        Utils.animateBrosgor();
+        CipherBox cipherBox = new CipherBox(DATA_DIR, "BROSGOR123");
         try (Scanner scanner = new Scanner(System.in)) {
-            clearConsole();
+            Utils.clearConsole();
             System.out.println("Bienvenido al sistema de cifrado híbrido BROSGOR.");
             System.out.println("Este programa utiliza un método de cifrado híbrido que combina RSA y AES.");
             System.out.println("Puedes cifrar y descifrar archivos con alta seguridad.");
@@ -27,28 +29,35 @@ public class MainCLI {
 
                 switch (option) {
                     case "1":
-                        clearConsole();
-                        File sourceFile = listFiles(ORIGINALS_DIR, scanner);
+                        Utils.clearConsole();
+                        File sourceFile = Utils.listFiles(ORIGINALS_DIR, scanner);
                         if (sourceFile != null) {
                             System.out.print("Ingresa el nombre del archivo cifrado (sin extensión): ");
                             String encryptedFileName = scanner.nextLine();
                             cipherBox.lockFile(sourceFile.getPath(), encryptedFileName);
+                            System.out.println("Archivo cifrado exitosamente.");
+                            Utils.pauseForKeyPress(scanner);
                         }
                         break;
                     case "2":
-                        clearConsole();
-                        File encryptedFile = listFiles(DATA_DIR, scanner);
+                        Utils.clearConsole();
+                        File encryptedFile = Utils.listFiles(DATA_DIR, scanner);
                         if (encryptedFile != null) {
                             System.out.print("Ingresa el nombre del archivo descifrado (con extensión): ");
                             String decryptedFileName = scanner.nextLine();
                             cipherBox.unlockFile(encryptedFile.getPath(), decryptedFileName);
+                            System.out.println("Archivo descifrado exitosamente. La extensión del archivo es: " +
+                                    Utils.getFileExtension(decryptedFileName));
+                            Utils.pauseForKeyPress(scanner);
                         }
                         break;
                     case "3":
+                        Utils.clearConsole();
                         System.out.println("Saliendo del programa.");
+                        Utils.pauseForKeyPress(scanner);
                         return;
                     default:
-                        clearConsole();
+                        Utils.clearConsole();
                         System.out.println("Opción inválida. Por favor, intenta nuevamente.");
                 }
             }
@@ -57,96 +66,4 @@ public class MainCLI {
         }
     }
 
-    // Método para listar archivos en un directorio
-    private static File listFiles(String directoryPath, Scanner scanner) {
-        File dir = new File(directoryPath);
-        File[] files = dir.listFiles();
-        if (files != null && files.length > 0) {
-            System.out.println("\nArchivos disponibles:");
-            for (int i = 0; i < files.length; i++) {
-                System.out.println((i + 1) + ". " + files[i].getName());
-            }
-            System.out.print("Selecciona el número del archivo: ");
-            int selection = scanner.nextInt();
-            scanner.nextLine(); // Consumir la nueva línea después de nextInt()
-            return files[selection - 1];
-        } else {
-            System.out.println("No hay archivos en el directorio.");
-            return null;
-        }
-    }
-
-    // Método para limpiar la consola
-    private static void clearConsole() {
-        try {
-            if (System.getProperty("os.name").contains("Windows")) {
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            } else {
-                System.out.print("\033[H\033[2J");
-                System.out.flush();
-            }
-        } catch (Exception e) {
-            System.out.println("Error al limpiar la consola: " + e.getMessage());
-        }
-    }
-
-    // Método para mostrar la animación "BROSGOR"
-    private static void animateBrosgor() {
-        String logo = """
-                ######   ######    #####    #####     ####    #####   ######
-                 ##  ##   ##  ##  ##   ##  ##   ##   ##  ##  ##   ##   ##  ##
-                 ##  ##   ##  ##  ##   ##  #        ##       ##   ##   ##  ##
-                 #####    #####   ##   ##   #####   ##       ##   ##   #####
-                 ##  ##   ## ##   ##   ##       ##  ##  ###  ##   ##   ## ##
-                 ##  ##   ##  ##  ##   ##  ##   ##   ##  ##  ##   ##   ##  ##
-                ######   #### ##   #####    #####     #####   #####   #### ##
-                       """;
-
-        String lock = """
-                  ____
-                 |    |
-                 | [] |
-                 |____|
-                  _||_
-                 |____|
-                """;
-
-        clearConsole();
-
-        // Mostrar el ícono de la cerradura con retraso
-        for (String line : lock.split("\n")) {
-            System.out.println(line);
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // Pausa antes de mostrar el logo
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // Mostrar el logo de BROSGOR con efecto de escritura
-        for (String line : logo.split("\n")) {
-            System.out.println(line);
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // Pausa antes de limpiar la pantalla
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        clearConsole();
-    }
 }
