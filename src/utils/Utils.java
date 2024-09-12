@@ -1,11 +1,14 @@
 package utils;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Scanner;
 
 public class Utils {
     public Utils() {
     }
+
     // Método para listar archivos en un directorio
     public static File listFiles(String directoryPath, Scanner scanner) {
         File dir = new File(directoryPath);
@@ -48,7 +51,9 @@ public class Utils {
     // Método para pausar y esperar la tecla de entrada
     public static void pauseForKeyPress(Scanner scanner) {
         System.out.println("\nPresiona cualquier tecla para continuar...");
-        scanner.nextLine();
+        if (scanner.hasNextLine()) {
+            scanner.nextLine();
+        }
         clearConsole();
     }
 
@@ -111,4 +116,31 @@ public class Utils {
 
         clearConsole();
     }
+
+    public static void readFileIfText(String extension, File file, Scanner scanner) throws IOException {
+        if ("txt".equalsIgnoreCase(extension) ) {
+            System.out.print("El archivo es un .txt, ¿quieres leerlo en la consola? (s/n): ");
+            String choice = scanner.nextLine(); // Usar el scanner principal
+
+            if (choice.equalsIgnoreCase("s")) {
+                String content = new String(Files.readAllBytes(file.toPath()));
+                System.out.println("\nContenido del archivo " + file.getName() + ":\n");
+                System.out.println(content);
+                System.out.println("\n--- Fin del archivo ---\n");
+
+                // Usar el scanner principal para leer la salida del modo lectura
+                System.out.println("Presiona 'x' para salir del modo lectura.");
+
+                while (true) {
+                    String input = scanner.nextLine();
+                    if (input.equalsIgnoreCase("x")) {
+                        System.out.println("Saliendo del modo lectura...");
+                        break;
+                    }
+                    System.out.println("Entrada no válida. Presiona 'x' para salir.");
+                }
+            }
+        }
+    }
+
 }
