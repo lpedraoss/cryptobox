@@ -1,6 +1,8 @@
 package cli;
 
 import core.CryptoBox;
+import core.models.DataFile;
+
 import java.io.File;
 import java.util.Scanner;
 import utils.Utils;
@@ -45,12 +47,19 @@ public class MainCLI {
                         if (encryptedFile != null) {
                             System.out.print("Ingresa el nombre del archivo descifrado (con extensión): ");
                             String decryptedFileName = scanner.nextLine();
-                            cipherBox.unlockFile(encryptedFile.getPath(), decryptedFileName);
+                            DataFile data = cipherBox.unlockFile(encryptedFile.getPath(), decryptedFileName);
                             System.out.println("Archivo descifrado exitosamente. La extensión del archivo es: " +
-                                    Utils.getFileExtension(decryptedFileName));
-                            Utils.pauseForKeyPress(scanner);
+                                    data.getExtension());
+
+                            if ("txt".equalsIgnoreCase(data.getExtension())) {
+                                Utils.readFileIfText(data.getExtension(), data.getFile(), scanner); // Pasar el scanner
+                                                                                                    // principal
+                            } else {
+                                Utils.pauseForKeyPress(scanner); // Solo si no es un archivo .txt
+                            }
                         }
                         break;
+
                     case "3":
                         Utils.clearConsole();
                         System.out.println("Saliendo del programa.");
