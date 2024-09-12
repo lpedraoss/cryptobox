@@ -1,6 +1,6 @@
 package cli;
 
-import core.CipherBox;
+import core.CryptoBox;
 import java.io.File;
 import java.util.Scanner;
 import utils.Utils;
@@ -12,7 +12,7 @@ public class MainCLI {
     public static void main(String[] args) {
 
         Utils.animateBrosgor();
-        CipherBox cipherBox = new CipherBox(DATA_DIR, "BROSGOR123");
+        CryptoBox cipherBox = new CryptoBox(DATA_DIR, "BROSGOR123");
         try (Scanner scanner = new Scanner(System.in)) {
             Utils.clearConsole();
             System.out.println("Bienvenido al sistema de cifrado híbrido BROSGOR.");

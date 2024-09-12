@@ -16,11 +16,11 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
-public class CipherBox {
+public class CryptoBox {
     private final String vaultDir;
     private final String password; // Declarar la variable password
 
-    public CipherBox(String vaultDir, String password) {
+    public CryptoBox(String vaultDir, String password) {
         this.vaultDir = vaultDir;
         this.password = password; // Inicializar la variable password
     }
