@@ -9,9 +9,13 @@ public class MainCLI {
     private static final String ORIGINALS_DIR = "src/central/";
 
     public static void main(String[] args) {
+        animateBrosgor();
         CipherBox cipherBox = new CipherBox(DATA_DIR);
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("Bienvenido al sistema de cifrado híbrido Brosgor.");
+            clearConsole();
+            System.out.println("Bienvenido al sistema de cifrado híbrido BROSGOR.");
+            System.out.println("Este programa utiliza un método de cifrado híbrido que combina RSA y AES.");
+            System.out.println("Puedes cifrar y descifrar archivos con alta seguridad.");
 
             while (true) {
                 System.out.println("\nSelecciona una opción:");
@@ -23,6 +27,7 @@ public class MainCLI {
 
                 switch (option) {
                     case "1":
+                        clearConsole();
                         File sourceFile = listFiles(ORIGINALS_DIR, scanner);
                         if (sourceFile != null) {
                             System.out.print("Ingresa el nombre del archivo cifrado (sin extensión): ");
@@ -31,6 +36,7 @@ public class MainCLI {
                         }
                         break;
                     case "2":
+                        clearConsole();
                         File encryptedFile = listFiles(DATA_DIR, scanner);
                         if (encryptedFile != null) {
                             System.out.print("Ingresa el nombre del archivo descifrado (con extensión): ");
@@ -42,7 +48,8 @@ public class MainCLI {
                         System.out.println("Saliendo del programa.");
                         return;
                     default:
-                        System.out.println("Opción inválida.");
+                        clearConsole();
+                        System.out.println("Opción inválida. Por favor, intenta nuevamente.");
                 }
             }
         } catch (Exception e) {
@@ -50,7 +57,7 @@ public class MainCLI {
         }
     }
 
-    // Reutiliza el mismo Scanner que se pasa como parámetro
+    // Método para listar archivos en un directorio
     private static File listFiles(String directoryPath, Scanner scanner) {
         File dir = new File(directoryPath);
         File[] files = dir.listFiles();
@@ -67,5 +74,79 @@ public class MainCLI {
             System.out.println("No hay archivos en el directorio.");
             return null;
         }
+    }
+
+    // Método para limpiar la consola
+    private static void clearConsole() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (Exception e) {
+            System.out.println("Error al limpiar la consola: " + e.getMessage());
+        }
+    }
+
+    // Método para mostrar la animación "BROSGOR"
+    private static void animateBrosgor() {
+        String logo = """
+                ######   ######    #####    #####     ####    #####   ######
+                 ##  ##   ##  ##  ##   ##  ##   ##   ##  ##  ##   ##   ##  ##
+                 ##  ##   ##  ##  ##   ##  #        ##       ##   ##   ##  ##
+                 #####    #####   ##   ##   #####   ##       ##   ##   #####
+                 ##  ##   ## ##   ##   ##       ##  ##  ###  ##   ##   ## ##
+                 ##  ##   ##  ##  ##   ##  ##   ##   ##  ##  ##   ##   ##  ##
+                ######   #### ##   #####    #####     #####   #####   #### ##
+                       """;
+
+        String lock = """
+                  ____
+                 |    |
+                 | [] |
+                 |____|
+                  _||_
+                 |____|
+                """;
+
+        clearConsole();
+
+        // Mostrar el ícono de la cerradura con retraso
+        for (String line : lock.split("\n")) {
+            System.out.println(line);
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Pausa antes de mostrar el logo
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Mostrar el logo de BROSGOR con efecto de escritura
+        for (String line : logo.split("\n")) {
+            System.out.println(line);
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Pausa antes de limpiar la pantalla
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        clearConsole();
     }
 }
