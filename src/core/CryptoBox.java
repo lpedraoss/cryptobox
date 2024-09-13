@@ -18,6 +18,7 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
 public class CryptoBox {
     private final String vaultDir;
@@ -36,8 +37,8 @@ public class CryptoBox {
         PrivateKey privateKey = pair.getPrivate();
         PublicKey publicKey = pair.getPublic();
 
-        saveKey(privateKey.getEncoded(), vaultDir + alias + ".private.key");
-        saveKey(publicKey.getEncoded(), vaultDir + alias + ".public.key");
+        saveKey(privateKey.getEncoded(), vaultDir + "key/" + alias + ".private.key");
+        saveKey(publicKey.getEncoded(), vaultDir + "key/" + alias + ".public.key");
 
         System.out.println("Claves RSA generadas y guardadas.");
     }
@@ -116,7 +117,7 @@ public class CryptoBox {
         generateRSAKeys(alias);
 
         // Leer clave pública
-        PublicKey publicKey = loadPublicKey(vaultDir + alias + ".public.key");
+        PublicKey publicKey = loadPublicKey(vaultDir + "key/" + alias + ".public.key");
 
         // Generar clave AES
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -133,14 +134,14 @@ public class CryptoBox {
         byte[] encryptedData = cipherAES.doFinal(originalData);
 
         // Guardar archivo cifrado
-        String encryptedFilePath = vaultDir + alias + ".lock";
+        String encryptedFilePath = vaultDir + "encrypt/" + alias + ".lock";
         try (FileOutputStream fos = new FileOutputStream(encryptedFilePath)) {
             fos.write(iv);
             fos.write(encryptedData);
         }
 
         // Guardar la extensión del archivo original en un archivo cifrado .extinfo
-        String extinfoPath = vaultDir + alias + ".extinfo";
+        String extinfoPath = vaultDir + "extension/" + alias + ".extinfo";
         String fileExtension = getFileExtension(originalFilePath);
         byte[] extinfoData = cipherAES.doFinal(fileExtension.getBytes());
         try (FileOutputStream fos = new FileOutputStream(extinfoPath)) {
@@ -154,7 +155,7 @@ public class CryptoBox {
         byte[] encryptedAESKey = cipherRSA.doFinal(aesKey.getEncoded());
 
         // Guardar clave AES cifrada
-        String aesKeyPath = vaultDir + alias + ".key";
+        String aesKeyPath = vaultDir + "key/" + alias + ".key";
         try (FileOutputStream fos = new FileOutputStream(aesKeyPath)) {
             fos.write(encryptedAESKey);
         }
@@ -162,57 +163,62 @@ public class CryptoBox {
         System.out.println("Archivo cifrado y clave AES guardada.");
     }
 
- // Método para descifrar un archivo
-public DataFile unlockFile(String encryptedFilePath, String alias) throws Exception {
-    // Leer clave privada
-    PrivateKey privateKey = loadPrivateKey(vaultDir + alias + ".private.key");
+    // Método para descifrar un archivo
+    public DataFile unlockFile(String encryptedFilePath, String alias) throws Exception {
+        // Leer clave privada
+        PrivateKey privateKey = loadPrivateKey(vaultDir + "key/" + alias + ".private.key");
 
-    // Leer clave AES cifrada
-    byte[] encryptedAESKey = Files.readAllBytes(new File(vaultDir + alias + ".key").toPath());
+        // Leer clave AES cifrada
+        byte[] encryptedAESKey = Files.readAllBytes(new File(vaultDir + "key/" + alias + ".key").toPath());
 
-    // Descifrar clave AES con RSA
-    Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
-    byte[] aesKeyBytes = cipherRSA.doFinal(encryptedAESKey);
+        // Descifrar clave AES con RSA
+        Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] aesKeyBytes = cipherRSA.doFinal(encryptedAESKey);
 
-    SecretKey aesKey = new SecretKeySpec(aesKeyBytes, "AES");
+        SecretKey aesKey = new SecretKeySpec(aesKeyBytes, "AES");
 
-    // Leer archivo cifrado
-    try (FileInputStream fis = new FileInputStream(encryptedFilePath)) {
-        byte[] iv = new byte[16];
-        fis.read(iv);
-        byte[] encryptedData = fis.readAllBytes();
+        // Leer archivo cifrado
+        try (FileInputStream fis = new FileInputStream(encryptedFilePath)) {
+            byte[] iv = new byte[16];
+            fis.read(iv);
+            byte[] encryptedData = fis.readAllBytes();
 
-        // Descifrar datos
-        Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipherAES.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
-        byte[] originalData = cipherAES.doFinal(encryptedData);
+            // Descifrar datos
+            Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipherAES.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
+            byte[] originalData = cipherAES.doFinal(encryptedData);
 
-        String decryptedFilePath = vaultDir + alias + ".unlocked";
-        Files.write(new File(decryptedFilePath).toPath(), originalData);
-        System.out.println("Archivo descifrado en: " + decryptedFilePath);
+            String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
+            Files.write(new File(decryptedFilePath).toPath(), originalData);
+            System.out.println("Archivo descifrado en: " + decryptedFilePath);
+
+            // Codificar archivo descifrado en binario
+            byte[] encodedData = Base64.getEncoder().encode(originalData);
+            Files.write(new File(decryptedFilePath).toPath(), encodedData);
+
+            System.out.println("Archivo codificado en: " + decryptedFilePath);
+        }
+
+        // Leer y descifrar el archivo .extinfo para obtener la extensión original
+        String extinfoPath = vaultDir + "extension/" + alias + ".extinfo";
+        try (FileInputStream fis = new FileInputStream(extinfoPath)) {
+            byte[] iv = new byte[16];
+            fis.read(iv);
+            byte[] encryptedExtinfo = fis.readAllBytes();
+
+            Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipherAES.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
+            byte[] extinfoData = cipherAES.doFinal(encryptedExtinfo);
+
+            String originalExtension = new String(extinfoData).trim();
+            System.out.println("La extensión original del archivo descifrado es: " + originalExtension);
+            String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
+            DataFile data = new DataFile(originalExtension, new File(decryptedFilePath));
+
+            return data;
+        }
     }
-
-    // Leer y descifrar el archivo .extinfo para obtener la extensión original
-    String extinfoPath = vaultDir + alias + ".extinfo";
-    try (FileInputStream fis = new FileInputStream(extinfoPath)) {
-        byte[] iv = new byte[16];
-        fis.read(iv);
-        byte[] encryptedExtinfo = fis.readAllBytes();
-
-        Cipher cipherAES = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipherAES.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
-        byte[] extinfoData = cipherAES.doFinal(encryptedExtinfo);
-
-        String originalExtension = new String(extinfoData).trim();
-        System.out.println("La extensión original del archivo descifrado es: " + originalExtension);
-        String decryptedFilePath = vaultDir + alias + ".unlocked";
-        DataFile data = new DataFile(originalExtension, new File(decryptedFilePath));
-
-        return data;
-        
-    }
-}
 
     // Método para obtener la extensión de un archivo
     private String getFileExtension(String filePath) {
@@ -223,5 +229,4 @@ public DataFile unlockFile(String encryptedFilePath, String alias) throws Except
         }
         return extension;
     }
-    
 }
