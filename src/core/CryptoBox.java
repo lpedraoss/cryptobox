@@ -5,6 +5,9 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import core.models.DataFile;
+
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.SecretKeyFactory;
 import java.io.File;
@@ -15,6 +18,7 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
 public class CryptoBox {
     private final String vaultDir;
@@ -33,13 +37,14 @@ public class CryptoBox {
         PrivateKey privateKey = pair.getPrivate();
         PublicKey publicKey = pair.getPublic();
 
-        saveKey(privateKey.getEncoded(), vaultDir + alias + ".private.key");
-        saveKey(publicKey.getEncoded(), vaultDir + alias + ".public.key");
+        saveKey(privateKey.getEncoded(), vaultDir + "key/" + alias + ".private.key");
+        saveKey(publicKey.getEncoded(), vaultDir + "key/" + alias + ".public.key");
 
         System.out.println("Claves RSA generadas y guardadas.");
     }
 
-    // Método para guardar las claves en archivos (Codificación Base64 y cifrado con contraseña)
+    // Método para guardar las claves en archivos (Codificación Base64 y cifrado con
+    // contraseña)
     private void saveKey(byte[] key, String path) throws Exception {
         byte[] salt = new byte[16];
         SecureRandom random = new SecureRandom();
@@ -62,7 +67,8 @@ public class CryptoBox {
         }
     }
 
-    // Método para cargar clave pública desde archivo (Decodificación Base64 y descifrado con contraseña)
+    // Método para cargar clave pública desde archivo (Decodificación Base64 y
+    // descifrado con contraseña)
     private PublicKey loadPublicKey(String filePath) throws Exception {
         byte[] fileContent = Files.readAllBytes(new File(filePath).toPath());
         byte[] salt = Arrays.copyOfRange(fileContent, 0, 16);
@@ -83,7 +89,8 @@ public class CryptoBox {
         return keyFactory.generatePublic(keySpec);
     }
 
-    // Método para cargar clave privada desde archivo (Decodificación Base64 y descifrado con contraseña)
+    // Método para cargar clave privada desde archivo (Decodificación Base64 y
+    // descifrado con contraseña)
     private PrivateKey loadPrivateKey(String filePath) throws Exception {
         byte[] fileContent = Files.readAllBytes(new File(filePath).toPath());
         byte[] salt = Arrays.copyOfRange(fileContent, 0, 16);
@@ -110,7 +117,7 @@ public class CryptoBox {
         generateRSAKeys(alias);
 
         // Leer clave pública
-        PublicKey publicKey = loadPublicKey(vaultDir + alias + ".public.key");
+        PublicKey publicKey = loadPublicKey(vaultDir + "key/" + alias + ".public.key");
 
         // Generar clave AES
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -127,14 +134,14 @@ public class CryptoBox {
         byte[] encryptedData = cipherAES.doFinal(originalData);
 
         // Guardar archivo cifrado
-        String encryptedFilePath = vaultDir + alias + ".lock";
+        String encryptedFilePath = vaultDir + "encrypt/" + alias + ".lock";
         try (FileOutputStream fos = new FileOutputStream(encryptedFilePath)) {
             fos.write(iv);
             fos.write(encryptedData);
         }
 
         // Guardar la extensión del archivo original en un archivo cifrado .extinfo
-        String extinfoPath = vaultDir + alias + ".extinfo";
+        String extinfoPath = vaultDir + "extension/" + alias + ".extinfo";
         String fileExtension = getFileExtension(originalFilePath);
         byte[] extinfoData = cipherAES.doFinal(fileExtension.getBytes());
         try (FileOutputStream fos = new FileOutputStream(extinfoPath)) {
@@ -148,7 +155,7 @@ public class CryptoBox {
         byte[] encryptedAESKey = cipherRSA.doFinal(aesKey.getEncoded());
 
         // Guardar clave AES cifrada
-        String aesKeyPath = vaultDir + alias + ".key";
+        String aesKeyPath = vaultDir + "key/" + alias + ".key";
         try (FileOutputStream fos = new FileOutputStream(aesKeyPath)) {
             fos.write(encryptedAESKey);
         }
@@ -157,12 +164,12 @@ public class CryptoBox {
     }
 
     // Método para descifrar un archivo
-    public void unlockFile(String encryptedFilePath, String alias) throws Exception {
+    public DataFile unlockFile(String encryptedFilePath, String alias) throws Exception {
         // Leer clave privada
-        PrivateKey privateKey = loadPrivateKey(vaultDir + alias + ".private.key");
+        PrivateKey privateKey = loadPrivateKey(vaultDir + "key/" + alias + ".private.key");
 
         // Leer clave AES cifrada
-        byte[] encryptedAESKey = Files.readAllBytes(new File(vaultDir + alias + ".key").toPath());
+        byte[] encryptedAESKey = Files.readAllBytes(new File(vaultDir + "key/" + alias + ".key").toPath());
 
         // Descifrar clave AES con RSA
         Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
@@ -182,13 +189,19 @@ public class CryptoBox {
             cipherAES.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
             byte[] originalData = cipherAES.doFinal(encryptedData);
 
-            String decryptedFilePath = vaultDir + alias + ".unlocked";
+            String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
             Files.write(new File(decryptedFilePath).toPath(), originalData);
             System.out.println("Archivo descifrado en: " + decryptedFilePath);
+
+            // Codificar archivo descifrado en binario
+            byte[] encodedData = Base64.getEncoder().encode(originalData);
+            Files.write(new File(decryptedFilePath).toPath(), encodedData);
+
+            System.out.println("Archivo codificado en: " + decryptedFilePath);
         }
 
         // Leer y descifrar el archivo .extinfo para obtener la extensión original
-        String extinfoPath = vaultDir + alias + ".extinfo";
+        String extinfoPath = vaultDir + "extension/" + alias + ".extinfo";
         try (FileInputStream fis = new FileInputStream(extinfoPath)) {
             byte[] iv = new byte[16];
             fis.read(iv);
@@ -200,6 +213,10 @@ public class CryptoBox {
 
             String originalExtension = new String(extinfoData).trim();
             System.out.println("La extensión original del archivo descifrado es: " + originalExtension);
+            String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
+            DataFile data = new DataFile(originalExtension, new File(decryptedFilePath));
+
+            return data;
         }
     }
 
