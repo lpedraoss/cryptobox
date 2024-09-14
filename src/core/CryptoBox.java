@@ -24,6 +24,11 @@ public class CryptoBox {
     private final String vaultDir;
     private final String password; // Declarar la variable password
 
+    public CryptoBox() {
+        this.vaultDir = "src/data/";
+        this.password = "BROSGOR123";
+    }
+
     public CryptoBox(String vaultDir, String password) {
         this.vaultDir = vaultDir;
         this.password = password; // Inicializar la variable password
