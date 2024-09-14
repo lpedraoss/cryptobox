@@ -19,7 +19,7 @@ public class MainCLI {
         Utils.createDirectories(DATA_DIR_KEY, DATA_DIR_DECRYPT, DATA_DIR_ENCRYPT, DATA_DIR_EXT, ORIGINALS_DIR);
 
         Utils.animateBrosgor();
-        CryptoBox cipherBox = new CryptoBox(DATA_DIR, "BROSGOR123");
+        CryptoBox cipherBox = new CryptoBox();
         try (Scanner scanner = new Scanner(System.in)) {
             Utils.clearConsole();
             System.out.println("Bienvenido al sistema de cifrado híbrido BROSGOR.");
