@@ -185,8 +185,7 @@ public class Utils {
                             try {
                                 convertExtension(file, extension);
                             } catch (Exception e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
+                                System.out.println("Error al convertir el archivo: " + e.getMessage());
                             }
                         }
                     } else {
@@ -195,6 +194,8 @@ public class Utils {
                     }
                 }
             }
+        } else {
+            System.out.println("El archivo no es de texto. No se puede leer.");
         }
     }
 
@@ -202,10 +203,9 @@ public class Utils {
     // Método para convertir un archivo .unlocked a la extensión proporcionada
     public static void convertExtension(File file, String extension) throws Exception {
 
-
         // Obtener el nombre del archivo sin la extensión .unlocked
         String alias = file.getName().substring(0, file.getName().lastIndexOf('.'));
-        if (extension == null || extension.isEmpty() || "unlocked".equalsIgnoreCase(extension)){
+        if (extension == null || extension.isEmpty() || "unlocked".equalsIgnoreCase(extension)) {
             CryptoBox cryptoBox = new CryptoBox();
 
             // Construir la ruta del archivo .extinfo
