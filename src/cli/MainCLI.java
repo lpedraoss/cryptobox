@@ -19,7 +19,7 @@ public class MainCLI {
         Utils.createDirectories(DATA_DIR_KEY, DATA_DIR_DECRYPT, DATA_DIR_ENCRYPT, DATA_DIR_EXT, ORIGINALS_DIR);
 
         Utils.animateBrosgor();
-        CryptoBox cipherBox = new CryptoBox(DATA_DIR, "BROSGOR123");
+        CryptoBox cipherBox = new CryptoBox();
         try (Scanner scanner = new Scanner(System.in)) {
             Utils.clearConsole();
             System.out.println("Bienvenido al sistema de cifrado híbrido BROSGOR.");
@@ -31,7 +31,8 @@ public class MainCLI {
                 System.out.println("1. Cifrar un archivo");
                 System.out.println("2. Descifrar un archivo");
                 System.out.println("3. Leer un archivo .unlocked en la consola");
-                System.out.println("4. Salir");
+                System.out.println("4. Cambiar la extensión de un archivo .unlocked");
+                System.out.println("5. Salir");
 
                 String option = scanner.nextLine();
 
@@ -68,16 +69,35 @@ public class MainCLI {
                     case "3":
                         Utils.clearConsole();
                         File unlockedFile = Utils.listFiles(DATA_DIR_DECRYPT, scanner);
+                        String alias = unlockedFile.getName().split("\\.")[0];
+
                         if (unlockedFile != null) {
-                            String extension = Utils.getFileExtension(unlockedFile.getName());
+                            String extension = cipherBox.decryptExtension(alias);
                             Utils.readFileIfText(extension, unlockedFile, scanner);
                         }
                         break;
                     case "4":
+
+                        Utils.clearConsole();
+                        unlockedFile = Utils.listFiles(DATA_DIR_DECRYPT, scanner);
+                        alias = unlockedFile.getName().split("\\.")[0];
+                        if (unlockedFile != null) {
+                            String extension = cipherBox.decryptExtension(alias);
+                            System.out.print(
+                                    "La extensión original del archivo es: " + extension
+                                            + ". ¿Deseas cambiarla? (s/n): ");
+                            String choice2 = scanner.nextLine();
+                            if (choice2.equalsIgnoreCase("s")) {
+                                Utils.convertExtension(unlockedFile, extension);
+                            }
+                        }
+                        break;
+                    case "5":
                         Utils.clearConsole();
                         System.out.println("Saliendo del programa.");
                         Utils.pauseForKeyPress(scanner);
                         return;
+
                     default:
                         Utils.clearConsole();
                         System.out.println("Opción inválida. Por favor, intenta nuevamente.");

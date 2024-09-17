@@ -9,9 +9,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
-
 import core.CryptoBox;
-import core.models.DataFile;
 
 public class Utils {
     private static final String DATA_DIR = "src/data/";
@@ -184,21 +182,11 @@ public class Utils {
                                 "La extensión original del archivo es: " + extension + ". ¿Deseas cambiarla? (s/n): ");
                         String choice2 = scanner.nextLine();
                         if (choice2.equalsIgnoreCase("s")) {
-                            // Decodificar el contenido del archivo
-                            byte[] encodedData2 = Files.readAllBytes(file.toPath());
-                            byte[] decodedData2 = Base64.getDecoder().decode(encodedData2);
-
-                            // Obtener el nombre del archivo sin la extensión .unlocked
-                            String baseName = file.getName().substring(0, file.getName().lastIndexOf('.'));
-
-                            // Crear el nuevo nombre de archivo con la extensión proporcionada
-                            String newFileName = baseName + "." + extension;
-                            File newFile = new File(file.getParent(), newFileName);
-
-                            // Escribir el contenido decodificado en el nuevo archivo
-                            Files.write(newFile.toPath(), decodedData2, StandardOpenOption.CREATE);
-
-                            System.out.println("Archivo convertido exitosamente a: " + newFile.getPath());
+                            try {
+                                convertExtension(file, extension);
+                            } catch (Exception e) {
+                                System.out.println("Error al convertir el archivo: " + e.getMessage());
+                            }
                         }
                     } else {
                         System.out.println(
@@ -206,36 +194,40 @@ public class Utils {
                     }
                 }
             }
+        } else {
+            System.out.println("El archivo no es de texto. No se puede leer.");
         }
     }
 
     // Método para convertir un archivo .unlocked a la extensión proporcionada
-    public static void convertExtension(String vaultDir, String password, String alias, File file) throws Exception {
-        CryptoBox cryptoBox = new CryptoBox(vaultDir, password);
+    // Método para convertir un archivo .unlocked a la extensión proporcionada
+    public static void convertExtension(File file, String extension) throws Exception {
 
-        // Construir la ruta del archivo .extinfo
-        String extinfoFileName = alias + ".extinfo";
-        File extinfoFile = new File(DATA_DIR_EXT + extinfoFileName);
+        // Obtener el nombre del archivo sin la extensión .unlocked
+        String alias = file.getName().substring(0, file.getName().lastIndexOf('.'));
+        if (extension == null || extension.isEmpty() || "unlocked".equalsIgnoreCase(extension)) {
+            CryptoBox cryptoBox = new CryptoBox();
 
-        // Verificar si el archivo .extinfo existe
-        if (!extinfoFile.exists()) {
-            System.out.println("El archivo .extinfo no existe: " + extinfoFile.getPath());
-            return;
+            // Construir la ruta del archivo .extinfo
+            String extinfoFileName = alias + ".extinfo";
+            File extinfoFile = new File(DATA_DIR_EXT + extinfoFileName);
+
+            // Verificar si el archivo .extinfo existe
+            if (!extinfoFile.exists()) {
+                System.out.println("El archivo .extinfo no existe: " + extinfoFile.getPath());
+                return;
+            }
+
+            // Descifrar el archivo .extinfo para obtener la extensión original
+            extension = cryptoBox.decryptExtension(alias);
         }
-
-        // Descifrar el archivo .extinfo para obtener la extensión original
-        DataFile extinfoDataFile = cryptoBox.unlockFile(extinfoFile.getPath(), alias);
-        String originalExtension = extinfoDataFile.getExtension();
 
         // Leer y descifrar el contenido del archivo .unlocked
         byte[] encodedData = Files.readAllBytes(file.toPath());
         byte[] decodedData = Base64.getDecoder().decode(encodedData);
 
-        // Obtener el nombre del archivo sin la extensión .unlocked
-        String baseName = file.getName().substring(0, file.getName().lastIndexOf('.'));
-
         // Crear el nuevo nombre de archivo con la extensión original
-        String newFileName = baseName + "." + originalExtension;
+        String newFileName = alias + "." + extension;
         File newFile = new File(file.getParent(), newFileName);
 
         // Escribir el contenido descifrado en el nuevo archivo

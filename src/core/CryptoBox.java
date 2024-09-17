@@ -24,6 +24,11 @@ public class CryptoBox {
     private final String vaultDir;
     private final String password; // Declarar la variable password
 
+    public CryptoBox() {
+        this.vaultDir = "src/data/";
+        this.password = "BROSGOR123";
+    }
+
     public CryptoBox(String vaultDir, String password) {
         this.vaultDir = vaultDir;
         this.password = password; // Inicializar la variable password
@@ -201,7 +206,30 @@ public class CryptoBox {
         }
 
         // Leer y descifrar el archivo .extinfo para obtener la extensión original
+        String originalExtension = decryptExtension(alias);
+        String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
+        DataFile data = new DataFile(originalExtension, new File(decryptedFilePath));
+
+        return data;
+    }
+
+    // desencripta el archivo .extinfo
+    public String decryptExtension(String alias) throws Exception {
+        // Leer clave privada
+        PrivateKey privateKey = loadPrivateKey(vaultDir + "key/" + alias + ".private.key");
+
+        // Leer clave AES cifrada
+        byte[] encryptedAESKey = Files.readAllBytes(new File(vaultDir + "key/" + alias + ".key").toPath());
+
+        // Descifrar clave AES con RSA
+        Cipher cipherRSA = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipherRSA.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] aesKeyBytes = cipherRSA.doFinal(encryptedAESKey);
+
+        SecretKey aesKey = new SecretKeySpec(aesKeyBytes, "AES");
+        // Leer y descifrar el archivo .extinfo para obtener la extensión original
         String extinfoPath = vaultDir + "extension/" + alias + ".extinfo";
+
         try (FileInputStream fis = new FileInputStream(extinfoPath)) {
             byte[] iv = new byte[16];
             fis.read(iv);
@@ -213,11 +241,9 @@ public class CryptoBox {
 
             String originalExtension = new String(extinfoData).trim();
             System.out.println("La extensión original del archivo descifrado es: " + originalExtension);
-            String decryptedFilePath = vaultDir + "decrypt/" + alias + ".unlocked";
-            DataFile data = new DataFile(originalExtension, new File(decryptedFilePath));
-
-            return data;
+            return originalExtension;
         }
+
     }
 
     // Método para obtener la extensión de un archivo
