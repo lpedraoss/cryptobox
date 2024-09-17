@@ -220,6 +220,9 @@ public class Utils {
 
             // Descifrar el archivo .extinfo para obtener la extensión original
             extension = cryptoBox.decryptExtension(alias);
+            if ("unlocked".equalsIgnoreCase(extension)) {
+                extension = "txt";
+            }
         }
 
         // Leer y descifrar el contenido del archivo .unlocked
