@@ -4,6 +4,8 @@ import core.CryptoBox;
 import core.models.DataFile;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.util.Base64;
 import java.util.Scanner;
 import utils.Utils;
 
@@ -30,7 +32,7 @@ public class MainCLI {
                 System.out.println("\nSelecciona una opción:");
                 System.out.println("1. Cifrar un archivo");
                 System.out.println("2. Descifrar un archivo");
-                System.out.println("3. Leer un archivo .unlocked en la consola");
+                System.out.println("3. Leer un archivo .lock en la consola");
                 System.out.println("4. Cambiar la extensión de un archivo .unlocked");
                 System.out.println("5. Salir");
 
@@ -68,19 +70,41 @@ public class MainCLI {
                         break;
                     case "3":
                         Utils.clearConsole();
-                        File unlockedFile = Utils.listFiles(DATA_DIR_DECRYPT, scanner);
-                        String alias = unlockedFile.getName().split("\\.")[0];
+                        File lockedFile = Utils.listFiles(DATA_DIR_ENCRYPT, scanner);
+                        if (lockedFile != null) {
+                            String alias = lockedFile.getName().split("\\.")[0];
+                            DataFile data = cipherBox.unlockFile(lockedFile.getPath(), alias);
+                            String extension = data.getExtension();
+                            File unlockedFile = data.getFile();
+                            System.out.println("Archivo descifrado exitosamente. La extensión del archivo es: " +
+                                    data.getExtension());
+                            if ("txt".equalsIgnoreCase(data.getExtension())
+                                    || "unlocked".equalsIgnoreCase(data.getExtension())) {
+                                Utils.readFileIfText(extension, unlockedFile, scanner); // Pasar el scanner
+                                // Leer el contenido del archivo .unlocked
+                                byte[] fileContent = Files.readAllBytes(unlockedFile.toPath());
 
-                        if (unlockedFile != null) {
-                            String extension = cipherBox.decryptExtension(alias);
-                            Utils.readFileIfText(extension, unlockedFile, scanner);
+                                // Decodificar el contenido desde Base64
+                                byte[] decodedContent = Base64.getDecoder().decode(fileContent);
+
+                                // Escribir el contenido decodificado de nuevo en el archivo
+                                Files.write(unlockedFile.toPath(), decodedContent);
+
+                                // Continuar con el proceso de cifrado y eliminación del archivo
+                                cipherBox.lockFile(unlockedFile.getPath(), alias);
+                                unlockedFile.delete();
+
+                            } else {
+                                Utils.pauseForKeyPress(scanner); // Solo si no es un archivo .txt
+                            }
                         }
+
                         break;
                     case "4":
 
                         Utils.clearConsole();
-                        unlockedFile = Utils.listFiles(DATA_DIR_DECRYPT, scanner);
-                        alias = unlockedFile.getName().split("\\.")[0];
+                        File unlockedFile = Utils.listFiles(DATA_DIR_DECRYPT, scanner);
+                        String alias = unlockedFile.getName().split("\\.")[0];
                         if (unlockedFile != null) {
                             String extension = cipherBox.decryptExtension(alias);
                             System.out.print(
