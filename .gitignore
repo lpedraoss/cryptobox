@@ -2,3 +2,7 @@ data/
 *.log
 .gradle/
 build/
+out/
+bin/
+app.jar
+manifest.mf
